@@ -51,7 +51,7 @@ transSequencesBuilder =
       Go           -> (List.reverse ts, [])
       AddAnother t -> (curr, t::ts)) ([], [])
 
-transSequences = Signal.sampleOn goClicks transSequencesBuilder |> Signal.map fst
+transSequences     = Signal.map fst (Signal.sampleOn goClicks transSequencesBuilder)
 sequenceInProgress = Signal.map snd transSequencesBuilder
 
 tranimations : Signal (Stage Forever Transform2D)

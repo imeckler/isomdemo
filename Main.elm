@@ -27,16 +27,16 @@ type Transformation
 animated : Transformation -> Transform2D -> Stage ForATime Transform2D
 animated t tInit = case t of
   Translate pt ->
-    Stage.for second
-      (  ease easeInOutQuad (pair float) (0,0) pt second
+    Stage.for second <|
+      ease easeInOutQuad (pair float) (0,0) pt second
       >> uncurry Transform2D.translation
-      >> firstDo tInit)
+      >> firstDo tInit
 
   Rotation x ->
-    Stage.for second
-      (  ease easeInOutQuad float 0 x second
+    Stage.for second <|
+      ease easeInOutQuad float 0 x second
       >> Transform2D.rotation
-      >> firstDo tInit)
+      >> firstDo tInit
   
   ReflectY ->
     Stage.for second

@@ -16,7 +16,6 @@ import Graphics.Element (..)
 import Color
 import Text
 import Time
-import Native.DemoUtil
 import Html
 
 type Transformation
@@ -43,8 +42,6 @@ type TUpdate
   = Go | AddAnother Transformation
 type alias AnimBuilderState = (List Transformation, List Transformation)
 
--- valvedWithState (::) transformations goClicks [] 
-
 transSequencesBuilder : Signal AnimBuilderState
 transSequencesBuilder =
   let interpretTUpdate : TUpdate -> (AnimBuilderState -> AnimBuilderState)
@@ -59,6 +56,7 @@ transSequencesBuilder =
 
 transSequences     = Signal.map fst (Signal.sampleOn goClicks transSequencesBuilder)
 sequenceInProgress = Signal.map snd transSequencesBuilder
+  |> Signal.foldp (\ts' ts -> if List.isEmpty ts' then ts else ts') []
 
 tranimations : Signal (Stage Forever Transform2D)
 tranimations =
@@ -70,12 +68,6 @@ tranimations =
       animNext ts (lastTrans, _) = 
         let t' = List.foldr (\t r -> interpret t >+> r) (Stage.stayFor 0) ts lastTrans in
         (Stage.finalValue t', Stage.sustain t')
-
-        {-
-        []      -> trivial
-        t0::ts' ->
-          let t' = List.foldl (\t r -> r +> interpret t) (interpret t0 lastTrans) ts' in
-          (Stage.finalValue t', Stage.sustain t') -}
   in
   Signal.foldp animNext trivial transSequences
   |> Signal.map snd
@@ -99,7 +91,7 @@ reflectButton   = button (Signal.send transChan ReflectY) "Reflect"
 -- Boring drawing stuff
 drawing = Signal.map (\t -> 
   let sty = Text.defaultStyle in
-  collage 500 500
+  collage w h
   [ groupTransform t
     [ group 
       [ outlined (solid Color.blue) (square 40) 
@@ -117,11 +109,17 @@ drawTransStack =
   << Html.ul []
   << revMap (Html.li [] << sing << Html.text << toString)
 
+w = 500
+h = 500
+
 main =
   Signal.map2 (\d ts -> 
-    flow down
-    [ d
-    , flow right [translateButton, rotateButton, reflectButton, goButton]
+    flow right
+    [ flow down
+      [ d
+      , container w 100 middle
+          (flow right [translateButton, rotateButton, reflectButton, goButton])
+      ]
     , drawTransStack ts
     ])
     drawing sequenceInProgress

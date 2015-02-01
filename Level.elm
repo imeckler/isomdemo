@@ -137,17 +137,17 @@ formText sty =
   >> Text.centered
   >> toForm
 
+defaultStyle =
+  { height   = Just 14
+  , color    = Color.black
+  , typeface = ["Futura", "sans-serif"]
+  , bold     = True
+  , italic   = False
+  , line     = Nothing
+  }
+
 anR color =
-  let sty = 
-      { height   = Just 50
-      , color    = color
-      , typeface = ["Futura", "sans-serif"]
-      , bold     = True
-      , italic   = False
-      , line     = Nothing
-      }
-  in
-  Text.style sty (Text.fromString "R")
+  Text.style {defaultStyle | height <- Just 50, color <- color} (Text.fromString "R")
   |> Text.centered
   |> toForm
 
@@ -159,7 +159,11 @@ run lev =
   let state       = filterFold (\mm s -> mm `Maybe.andThen` \m -> update lev m s) (initialState lev) moveClicks
       butts       = Html.toElement w 100 (transButtons lev)
       ghost       = goalGhost lev
-      movesLeft s = toForm (Text.plainText (toString s.movesLeft))
+      movesLeft s =
+        group
+        [ filled fadeColor (circle 20)
+        , formText {defaultStyle | height <- Just 20} (toString s.movesLeft)
+        ]
   in
   Signal.map3 (\trans overlay s ->
     flow down
@@ -207,8 +211,8 @@ transButtons =
         [ traced (thick rotateArcColor) (arc a)
         , ngon 3 10
           |> filled rotateArcColor
---          |> move (r * cos a, r * sin a)
-          |> move (r - thickness/2, 0)
+          |> rotate (-pi /6)
+          |> moveX r
           |> sing |> groupTransform (Transform2D.rotation a) -- why doesn't rotate work...
         ]
 
@@ -266,4 +270,5 @@ fadeColor        = Color.rgb 254 204 9
 winTextColor     = Color.rgb 75 91 110
 buttonBackgroundColor = winTextColor
 rotateArcColor = fadeColor
+movesLeftTextColor = winTextColor
 -- reflLineColor =

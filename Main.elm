@@ -70,12 +70,6 @@ tranimations =
       animNext ts (lastTrans, _) = 
         let t' = List.foldr (\t r -> interpret t >+> r) (Stage.stayFor 0) ts lastTrans in
         (Stage.finalValue t', Stage.sustain t')
-
-        {-
-        []      -> trivial
-        t0::ts' ->
-          let t' = List.foldl (\t r -> r +> interpret t) (interpret t0 lastTrans) ts' in
-          (Stage.finalValue t', Stage.sustain t') -}
   in
   Signal.foldp animNext trivial transSequences
   |> Signal.map snd

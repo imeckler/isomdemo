@@ -24,32 +24,38 @@ type Transformation
   | Rotation Float
   | ReflectY
 
-animated : Transformation -> Transform2D -> Stage ForATime Transform2D
-animated t tInit = case t of
+interpret : Transformation -> (Transform2D -> Stage ForATime Transform2D)
+interpret t tInit = Stage.map (firstDo tInit) <| Stage.for second <| case t of
   Translate pt ->
-    Stage.for second <|
-      ease easeInOutQuad (pair float) (0,0) pt second
-      >> uncurry Transform2D.translation
-      >> firstDo tInit
+    uncurry Transform2D.translation
+    << ease easeInOutQuad (pair float) (0,0) pt second
 
   Rotation x ->
-    Stage.for second <|
-      ease easeInOutQuad float 0 x second
-      >> Transform2D.rotation
-      >> firstDo tInit
+    Transform2D.rotation
+    << ease easeInOutQuad float 0 x second
   
   ReflectY ->
-    Stage.for second
-      (ease easeInOutQuad float 1 -1 second >> Transform2D.scaleX >> firstDo tInit)
+    Transform2D.scaleX
+    << ease easeInOutQuad float 1 -1 second
 
- -- If only we had Either or polymorphic variants...
-type TUpdate = Go | AddAnother Transformation
-transSequencesBuilder : Signal (List Transformation, List Transformation)
+-- If only we had Either or polymorphic variants...
+type TUpdate
+  = Go | AddAnother Transformation
+type alias AnimBuilderState = (List Transformation, List Transformation)
+
+-- valvedWithState (::) transformations goClicks [] 
+
+transSequencesBuilder : Signal AnimBuilderState
 transSequencesBuilder =
-  Signal.merge (Signal.map (\_ -> Go) goClicks) (Signal.map AddAnother transformations)
-  |> Signal.foldp (\u (curr, ts) -> case u of 
-      Go           -> (List.reverse ts, [])
-      AddAnother t -> (curr, t::ts)) ([], [])
+  let interpretTUpdate : TUpdate -> (AnimBuilderState -> AnimBuilderState)
+      interpretTUpdate u = case u of
+        Go           -> \(_, ts)    -> (List.reverse ts, [])
+        AddAnother t -> \(curr, ts) -> (curr, t::ts)
+  in
+  Signal.merge
+    (Signal.map (\_ -> Go) goClicks)
+    (Signal.map AddAnother transformations)
+  |> Signal.foldp interpretTUpdate ([], [])
 
 transSequences     = Signal.map fst (Signal.sampleOn goClicks transSequencesBuilder)
 sequenceInProgress = Signal.map snd transSequencesBuilder
@@ -57,14 +63,19 @@ sequenceInProgress = Signal.map snd transSequencesBuilder
 tranimations : Signal (Stage Forever Transform2D)
 tranimations =
   let trivial = (Transform2D.identity, Stage.stayForever Transform2D.identity)
-      animNext : List (Transformation)
+
+      animNext : List Transformation
                -> (Transform2D, Stage Forever Transform2D)
                -> (Transform2D, Stage Forever Transform2D)
-      animNext ts (lastTrans, _) = case ts of
+      animNext ts (lastTrans, _) = 
+        let t' = List.foldr (\t r -> interpret t >+> r) (Stage.stayFor 0) ts lastTrans in
+        (Stage.finalValue t', Stage.sustain t')
+
+        {-
         []      -> trivial
         t0::ts' ->
-          let t' = List.foldl (\t r -> r +> animated t) (animated t0 lastTrans) ts' in
-          (Stage.finalValue t', Stage.sustain t')
+          let t' = List.foldl (\t r -> r +> interpret t) (interpret t0 lastTrans) ts' in
+          (Stage.finalValue t', Stage.sustain t') -}
   in
   Signal.foldp animNext trivial transSequences
   |> Signal.map snd

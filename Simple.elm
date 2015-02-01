@@ -22,6 +22,6 @@ pos' =
   |> Stage.cycle
 
 main =
-  Stage.run (Signal.constant pos) (Time.every 30)
+  Stage.run (Signal.constant pos') (Time.every 30)
   |> Signal.map (\p -> collage 500 500 [moveX p aNiceDrawing])
 

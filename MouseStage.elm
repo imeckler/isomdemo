@@ -24,16 +24,38 @@ h = 500
 drawingPos : Signal (Stage ForATime (Float, Float))
 drawingPos = 
   let update : (Int, Int) -> State -> State
-      update (mx, my) ((x, y), _) =
-        let (x', y') = (toFloat mx - w/2, h/2-toFloat my) in
-        ( (x', y')
+      update mousePos (currPos, _) =
+        let nextPos = pagePosToWorldPos mousePos in
+        ( nextPos
         , Stage.for second <|
-            ease easeInOutQuad (pair float) (x, y) (x', y') second)
+            ease easeInOutQuad (pair float) currPos nextPos second)
   in
   Signal.foldp update ((0, 0), Stage.stayFor 0 (0,0)) clickPosns
   |> Signal.map snd
 
+-- clickCircle : Signal (Stage 
+clickCircle =
+  let circleData = Signal.map (\p ->
+        Stage.forever (\t -> (pagePosToWorldPos p, t * 500/second)))
+        clickPosns
+  in
+  Stage.run circleData (Time.every 30)
+  |> Signal.map (\(p, r) -> move p <| outlined (solid Color.red) <| circle r)
+
+main =
+  let drawing =
+        Stage.run (Signal.map Stage.sustain drawingPos) (Time.every 30)
+        |> Signal.map (\p -> move p aNiceDrawing)
+  in
+  Signal.map2 (\c d -> collage w h [c,d])
+    clickCircle drawing
+
+
+{-
 main =
   Stage.run (Signal.map Stage.sustain drawingPos) (Time.every 30)
   |> Signal.map (\p -> collage w h [move p aNiceDrawing])
+-}
+-- Util
+pagePosToWorldPos (x, y) = (toFloat x - w/2, h/2 - toFloat y)
 

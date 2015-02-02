@@ -58,7 +58,8 @@ transSequences     = Signal.map fst (Signal.sampleOn goClicks transSequencesBuil
 sequenceInProgress = Signal.map snd transSequencesBuilder
   |> Signal.foldp (\ts' ts -> if List.isEmpty ts' then ts else ts') []
 
--- >+> 
+-- (>+>) : (a -> Stage t a) -> (a -> Stage t' a) -> (a -> Stage t' a)
+
 tranimations : Signal (Stage Forever Transform2D)
 tranimations =
   let trivial = (Transform2D.identity, Stage.stayForever Transform2D.identity)

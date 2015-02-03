@@ -1,4 +1,4 @@
-module Main where
+module IsomSequence where
 
 import Easing(..)
 import Stage (Stage, ForATime, Forever)

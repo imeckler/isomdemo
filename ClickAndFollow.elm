@@ -1,4 +1,4 @@
-module MouseStage where
+module ClickAndFollow where
 
 import Stage
 import Stage(Stage, ForATime)
@@ -7,11 +7,12 @@ import Time
 import Signal
 import Time(second)
 import Graphics.Collage(..)
+import Graphics.Element(..)
 import Color
 import Mouse
 import Easing(..)
 
-aNiceDrawing = filled (Color.blue) (ngon 3 30)
+aNiceDrawing = toForm (image 200 200 "https://avatars2.githubusercontent.com/u/1322514?v=3&s=460")
 
 clickPosns : Signal (Int, Int)
 clickPosns = Signal.sampleOn Mouse.clicks Mouse.position 
@@ -33,7 +34,6 @@ drawingPos =
   Signal.foldp update ((0, 0), Stage.stayFor 0 (0,0)) clickPosns
   |> Signal.map snd
 
--- clickCircle : Signal (Stage 
 clickCircle =
   let circleData = Signal.map (\p ->
         Stage.forever (\t -> (pagePosToWorldPos p, t * 500/second)))

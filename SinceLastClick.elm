@@ -1,4 +1,4 @@
-module MouseStage where
+module SinceLastClick where
 
 import Stage
 import Stage(Stage, ForATime, Forever)
@@ -27,3 +27,4 @@ pxPerMs = 50 / second
 ticks = 
   List.map (\i -> let x = i * 50 in traced defaultLine (segment (x,-10) (x,10))) [0..20]
   |> group
+
